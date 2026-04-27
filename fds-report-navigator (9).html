@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FDS Report Navigator</title>
+<style>
+
+
+  @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800;900&display=swap');
+  :root{--blue:#3f57bd;--navy:#183765;--ink:#172033;--muted:#64748b;--line:#d8dee8;--soft:#f8fafc;}
+  *{box-sizing:border-box}
+  body{margin:0;background:#e6e6e6;color:var(--ink);font-family:'Source Sans 3',Arial,sans-serif}
+  /* Make sure the [hidden] attribute always wins over class display rules */
+  [hidden]{display:none !important}
+  .topbar{height:74px;background:#f7f7f7;border-bottom:1px solid #b8c5d8;display:flex;align-items:center;padding:0 28px;position:relative}
+  .back,.home,.search,.help{color:#2e5e91;font-size:31px;font-weight:700;line-height:1}
+  .home{font-size:34px;margin-left:24px}
+  .logo{margin-left:24px;color:#2865a4;font-size:13px;line-height:1.05;font-weight:700}
+  .logo span{display:block;font-size:7px;letter-spacing:.1em;font-weight:600}
+  .title{position:absolute;left:50%;transform:translateX(-50%);font-size:30px;color:#2b5a88;font-weight:500}
+  .top-icons{margin-left:auto;display:flex;align-items:center;gap:28px}
+  .user-dot{font-size:16px;background:#3d9ad5;color:#fff;border-radius:50%;width:44px;height:44px;display:grid;place-items:center;font-weight:700}
+  .toolbar{height:45px;background:#d6e3f3;border-bottom:1px solid #9fb4cf;display:flex;align-items:center;gap:10px;padding:0 16px}
+  .tool-btn,.zoom,.page-num{height:28px;border:1px solid #9bb1cc;background:#fff;border-radius:2px;display:flex;align-items:center;justify-content:center;color:#2865a4;font-weight:700}
+  .tool-btn{width:34px}
+  .zoom{width:80px;color:#000}
+  .page-num{width:88px;color:#000}
+  .workspace{display:grid;grid-template-columns:58px 1fr;min-height:calc(100vh - 119px)}
+  .side-rail{background:#e7eef8;border-right:1px solid #aabbd2;padding-top:20px;display:flex;justify-content:center;color:#4b9cef;font-size:30px}
+  .canvas-wrap{background:#8e8e8e;padding:16px 18px 28px;overflow:auto}
+  .white-page{max-width:1430px;min-height:760px;margin:0 auto;background:#fff;border:2px solid #303030}
+  .report-blue{background:var(--blue);min-height:92px;display:grid;grid-template-columns:260px 360px 1fr 210px;align-items:start;gap:12px;padding:20px 24px;color:#fff}
+  .labels{font-size:19px;line-height:2.05;white-space:nowrap}
+  select{width:100%;height:27px;font:16px Arial,sans-serif;border:1px solid #999;background:#fff}
+  .selected-line{font-size:18px;margin-top:14px;color:#fff;min-height:28px}
+  .reset{justify-self:end;background:#f5f0e9;border:1px solid #d8d0c2;padding:13px 22px;font-size:17px;border-radius:3px;color:#111;cursor:pointer;font-family:inherit}
+  .reset:hover{background:#ebe2d4}
+  .navigator{padding:60px 54px 54px}
+  .intro{text-align:center;max-width:1000px;margin:0 auto}
+  .eyebrow{color:var(--navy);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;margin-bottom:7px}
+  h1{margin:0;font-size:44px;line-height:1.05;color:#102747;font-weight:700}
+  .lede{font-size:19px;color:#475569;max-width:760px;margin:12px auto 24px;line-height:1.35}
+  .lookup-section{max-width:1060px;margin:30px auto 0;text-align:left}
+  .lookup-title{font-size:15px;text-transform:uppercase;letter-spacing:.11em;color:#183765;font-weight:900;margin:0 0 12px;border-left:4px solid #3f57bd;padding-left:10px}
+  .group-label{font-size:13px;text-transform:uppercase;letter-spacing:.11em;color:#183765;font-weight:900;margin:0 0 12px;border-left:4px solid #3f57bd;padding-left:10px}
+  .group-label:not(:first-child){margin-top:22px}
+  .group-label-center{text-align:center;border-left:0;padding-left:0;font-size:14px;letter-spacing:.14em;margin-bottom:16px}
+  .quick-prompts{display:grid;grid-template-columns:repeat(auto-fit,minmax(185px,1fr));gap:12px;margin-top:0}
+  .quick-prompts button{border:1.5px solid #b9c7da;background:#fff;color:#183765;border-radius:12px;padding:13px 15px;font-weight:800;cursor:pointer;box-shadow:0 3px 0 #d8dee8;letter-spacing:.01em;position:relative;text-align:left;font-size:15px;font-family:inherit;transition:.12s ease}
+  .quick-prompts button::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#3f57bd;margin-right:9px;vertical-align:middle}
+  .quick-prompts button:hover{background:#eef4ff;color:#183765;border-color:#3f57bd;transform:translateY(-1px);box-shadow:0 5px 0 #c7d4e6}
+  .quick-prompts button:active{transform:translateY(1px);box-shadow:0 2px 0 #c7d4e6}
+
+  /* Intent pills (Layer 1) */
+  .intent-pills{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:0;justify-content:center}
+  .intent-pill{border:1.5px solid #b9c7da;background:#fff;color:#183765;border-radius:999px;padding:11px 20px;font-weight:800;cursor:pointer;font-size:15px;font-family:inherit;letter-spacing:.01em;transition:.15s ease;box-shadow:0 2px 0 #d8dee8}
+  .intent-pill:hover{background:#eef4ff;border-color:#3f57bd;transform:translateY(-1px);box-shadow:0 4px 0 #c7d4e6}
+  .intent-pill.active{background:#3f57bd;border-color:#3f57bd;color:#fff;box-shadow:0 2px 0 #2c4099}
+  .intent-pill.active:hover{background:#34489d;color:#fff}
+
+  /* Refinement section (Layer 2) */
+  .refinement{margin-top:24px;padding:20px;border:1px solid #d8dee8;border-radius:14px;background:#fbfcfe}
+  .refinement-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .refinement-label{font-size:13px;text-transform:uppercase;letter-spacing:.11em;color:#183765;font-weight:900;border-left:4px solid #3f57bd;padding-left:10px}
+  .logic-toggle{width:32px;height:32px;border-radius:50%;border:1.5px solid #b9c7da;background:#fff;color:#3f57bd;font-size:17px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s ease;font-family:inherit}
+  .logic-toggle:hover{background:#eef4ff;border-color:#3f57bd}
+  .logic-toggle.open{background:#3f57bd;color:#fff;border-color:#3f57bd}
+  .sub-pills{display:flex;flex-wrap:wrap;gap:8px}
+  .scope-chooser{margin-bottom:18px;padding:18px 20px;background:#fff;border:1.5px dashed #b9c7da;border-radius:12px}
+  .scope-prompt{font-size:14px;font-weight:700;color:#183765;margin-bottom:14px;letter-spacing:.005em}
+  .scope-pills{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .scope-pill{position:relative;border:2px solid #b9c7da;background:#fbfcfe;color:#183765;border-radius:14px;padding:18px 18px 18px 64px;cursor:pointer;font-family:inherit;text-align:left;transition:.18s ease;display:flex;flex-direction:column;gap:4px;overflow:hidden}
+  .scope-pill::before{content:"";position:absolute;left:18px;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:18px;font-weight:700;line-height:1;transition:.18s ease}
+  .scope-pill[data-scope="project"]{border-color:#7a9be8}
+  .scope-pill[data-scope="project"]::before{content:"◉";background:#e8efff;color:#3f57bd}
+  .scope-pill[data-scope="project"]:hover{background:#eef4ff;border-color:#3f57bd;transform:translateY(-2px);box-shadow:0 8px 18px rgba(63,87,189,.18)}
+  .scope-pill[data-scope="project"].active{background:#3f57bd;border-color:#3f57bd;color:#fff}
+  .scope-pill[data-scope="project"].active::before{background:#fff;color:#3f57bd}
+  .scope-pill[data-scope="department"]{border-color:#c89adb}
+  .scope-pill[data-scope="department"]::before{content:"⌗";background:#f5e8fb;color:#7c3aa8;font-size:22px}
+  .scope-pill[data-scope="department"]:hover{background:#faf2ff;border-color:#7c3aa8;transform:translateY(-2px);box-shadow:0 8px 18px rgba(124,58,168,.18)}
+  .scope-pill[data-scope="department"].active{background:#7c3aa8;border-color:#7c3aa8;color:#fff}
+  .scope-pill[data-scope="department"].active::before{background:#fff;color:#7c3aa8;content:"⌗";font-size:22px}
+  .scope-pill.active .scope-pill-sub{color:rgba(255,255,255,.85)}
+  .scope-pill-main{font-size:16px;font-weight:800;letter-spacing:.005em}
+  .scope-pill-sub{font-size:12px;color:#64748b;font-weight:500;line-height:1.35}
+  .sub-pill{border:1.5px solid #cbd5e1;background:#fff;color:#183765;border-radius:999px;padding:8px 16px;font-weight:700;cursor:pointer;font-size:14px;font-family:inherit;transition:.12s ease}
+  .sub-pill::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:#3f57bd;margin-right:8px;vertical-align:middle}
+  .sub-pill:hover{background:#eef4ff;border-color:#3f57bd;transform:translateY(-1px)}
+  .sub-pill.active{background:#eef4ff;border-color:#3f57bd;color:#183765;box-shadow:inset 0 0 0 1px #3f57bd}
+
+  /* Logic card */
+  .logic-card{margin-top:16px;padding:16px 18px;background:#fff;border:1px solid #d8dee8;border-left:4px solid #3f57bd;border-radius:8px}
+  .logic-formula{font-family:'Source Sans 3',monospace;font-size:16px;font-weight:800;color:#102747;margin-bottom:8px;letter-spacing:.01em}
+  .logic-explain{font-size:14px;color:#475569;line-height:1.5;margin-bottom:10px}
+  .logic-explain em{color:#183765;font-style:normal;font-weight:700}
+  .logic-report{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:#64748b;font-weight:800;border-top:1px solid #e2e8f0;padding-top:10px}
+  .logic-report strong{color:#183765;text-transform:none;letter-spacing:0;font-size:14px;display:block;margin-top:3px;font-weight:700}
+
+  /* FDS path indicator — mirrors the blue header bar up top */
+  .fds-indicator{margin-top:16px;background:#3f57bd;border-radius:10px;padding:14px 18px;display:flex;align-items:flex-start;gap:14px;color:#fff;animation:fdsPulse .35s ease-out}
+  @keyframes fdsPulse{0%{transform:scale(.98);opacity:0}100%{transform:scale(1);opacity:1}}
+  .fds-indicator-arrow{font-size:22px;color:#fff;line-height:1;background:rgba(255,255,255,.18);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex-shrink:0;font-weight:700}
+  .fds-indicator-body{flex:1;min-width:0}
+  .fds-indicator-eyebrow{font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:#cfd8f5;font-weight:800;margin-bottom:4px}
+  .fds-indicator-path{font-size:18px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:6px;word-break:break-word}
+  .fds-folder{color:#cfd8f5;font-weight:600;font-size:15px}
+  .fds-arrow{color:#cfd8f5;margin:0 8px;font-weight:400}
+  .fds-report{color:#fbbf24;font-weight:800;font-size:21px;letter-spacing:.005em;text-shadow:0 1px 2px rgba(0,0,0,.15);display:inline-block;padding-top:2px}
+  .fds-indicator-hint{font-size:12px;color:#cfd8f5;line-height:1.4}
+
+  /* Show Me button — sits inside the blue card */
+  .show-me-btn{margin-top:12px;display:inline-flex;align-items:center;gap:8px;background:#fff;color:#3f57bd;border:0;border-radius:999px;padding:9px 18px;font-family:inherit;font-size:14px;font-weight:800;letter-spacing:.01em;cursor:pointer;box-shadow:0 2px 0 rgba(255,255,255,.25);transition:.15s ease}
+  .show-me-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,0,0,.18)}
+  .show-me-btn:active{transform:translateY(1px);box-shadow:0 1px 0 rgba(255,255,255,.25)}
+  .show-me-btn.playing{opacity:.6;cursor:default;transform:none}
+  .show-me-icon{display:inline-block;font-size:15px;line-height:1;transform:rotate(-12deg);font-weight:700}
+
+  /* Pulsing highlight ring used during the Show Me animation */
+  .pulse-highlight{position:relative;animation:pulseRing 1.4s ease-out;outline:3px solid #fbbf24;outline-offset:3px;border-radius:4px;box-shadow:0 0 0 6px rgba(251,191,36,.25),0 0 24px rgba(251,191,36,.5);transition:outline .15s ease,box-shadow .15s ease}
+  @keyframes pulseRing{
+    0%{outline-color:rgba(251,191,36,1);box-shadow:0 0 0 0 rgba(251,191,36,.6),0 0 24px rgba(251,191,36,.6)}
+    50%{outline-color:rgba(251,191,36,1);box-shadow:0 0 0 10px rgba(251,191,36,.15),0 0 32px rgba(251,191,36,.7)}
+    100%{outline-color:rgba(251,191,36,1);box-shadow:0 0 0 6px rgba(251,191,36,.25),0 0 24px rgba(251,191,36,.5)}
+  }
+
+  /* Floating "Look here" tag that points at the highlighted dropdown */
+  .show-me-pointer{position:absolute;background:#fbbf24;color:#102747;font-weight:900;font-size:11px;text-transform:uppercase;letter-spacing:.12em;padding:5px 10px;border-radius:4px;white-space:nowrap;z-index:9999;pointer-events:none;box-shadow:0 6px 16px rgba(0,0,0,.25);animation:pointerPop .25s ease-out}
+  .show-me-pointer::after{content:"";position:absolute;top:-6px;left:14px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:6px solid #fbbf24}
+  @keyframes pointerPop{0%{opacity:0;transform:translateY(-4px) scale(.9)}100%{opacity:1;transform:translateY(0) scale(1)}}
+  .suggestions-wrap{max-width:1060px;margin:34px auto 0}
+  .empty-state{border:1px dashed #cbd5e1;border-radius:12px;background:#fbfcfe;text-align:center;padding:34px;color:#64748b}
+  .empty-state h2{margin:0 0 8px;color:#183765;font-size:24px}
+  .empty-state p{margin:0;font-size:16px}
+  .suggestions{display:grid;grid-template-columns:1fr;gap:14px}
+  .suggestion-card{border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:.12s ease}
+  .suggestion-card:hover{transform:translateY(-2px);border-color:#9db7e5;box-shadow:0 12px 26px rgba(15,23,42,.08)}
+  .suggestion-title{display:flex;flex-direction:column;gap:3px}
+  .suggestion-title .eyebrow{margin:0;font-size:10px}
+  .suggestion-title h2{margin:0;color:#183765;font-size:22px;font-weight:700;line-height:1.1}
+  .match-badge{background:#edf2f7;color:#475569;border-radius:999px;padding:6px 11px;font-size:11px;font-weight:800;white-space:nowrap}
+  .no-results{border:1px solid #e2e8f0;background:#fff;border-radius:12px;padding:24px;text-align:center;color:#64748b}
+  .no-results h2{margin:0 0 6px;color:#183765}
+  @media(max-width:1000px){.report-blue{grid-template-columns:1fr;gap:8px}.reset{justify-self:start}}
+  @media(max-width:700px){.topbar{height:66px}.title{font-size:22px}.workspace{grid-template-columns:1fr}.side-rail{display:none}.navigator{padding:34px 20px}h1{font-size:34px}}
+
+
+</style>
+</head>
+<body>
+<div class="sap-shell">
+  <div class="topbar">
+    <div class="back">‹</div>
+    <div class="home">⌂</div>
+    <div class="logo">♔ Columbia University<span>IN THE CITY OF NEW YORK</span></div>
+    <div class="title">FDS On Demand Reports⌄</div>
+    <div class="top-icons">
+      <div class="search">⌕</div>
+      <div class="help">?</div>
+      <div class="user-dot">MT</div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="tool-btn">◀</div>
+    <div class="tool-btn">▶</div>
+    <div class="tool-btn">▣</div>
+    <div class="page-num">1 of 1</div>
+    <div class="zoom">100%</div>
+    <div class="tool-btn">▦</div>
+  </div>
+
+  <div class="workspace">
+    <div class="side-rail">⌘</div>
+    <div class="canvas-wrap">
+      <div class="white-page">
+
+        <div class="report-blue">
+          <div class="labels">
+            <div>FDS Folder/Report Selection:</div>
+            <div>Selected FDS Folder/Report:</div>
+          </div>
+          <div>
+            <select id="folderSelect">
+              <option>Select a folder...</option>
+              <option>ChartField Statements</option>
+              <option>Claim on Cash Reports</option>
+              <option>Consolidated Operating Reports (COB)</option>
+              <option>Endowment And Gift Reports</option>
+              <option>Financial Statements</option>
+              <option>Fiscal Year-End Reports</option>
+              <option>Fund Balance-Overdraft Reports</option>
+              <option>Payroll Reports</option>
+              <option>Procurement Reports</option>
+              <option>Project Lifecycle Reports</option>
+              <option>Trial Balance Reports</option>
+            </select>
+            <div class="selected-line" id="selectedLine">Use the search below to identify the right report.</div>
+          </div>
+          <select id="reportSelect">
+            <option>Select a report...</option>
+          </select>
+          <button class="reset" onclick="resetPage()">Reset Page Parameters</button>
+        </div>
+
+        <main class="navigator">
+          <section class="intro">
+            <div class="eyebrow">Columbia Engineering Finance</div>
+            <h1>Find the Right FDS Report</h1>
+            <p class="lede">Pick what you're looking for. We'll point you to the right FDS folder and report — and show you the logic behind the numbers.</p>
+
+            <div class="lookup-section">
+              <div class="group-label group-label-center">What are you looking for?</div>
+              <div class="intent-pills" id="intentPills">
+                <button class="intent-pill" data-intent="balance" onclick="selectIntent('balance')">Budget and Available Balance</button>
+                <button class="intent-pill" data-intent="charges" onclick="selectIntent('charges')">Charges &amp; Transactions - Detailed View</button>
+                <button class="intent-pill" data-intent="payroll" onclick="selectIntent('payroll')">Payroll Reports</button>
+                <button class="intent-pill" data-intent="sponsored" onclick="selectIntent('sponsored')">Sponsored Project Management</button>
+                <button class="intent-pill" data-intent="purchaseorders" onclick="selectIntent('purchaseorders')">Purchase Order Open Commitments</button>
+                <button class="intent-pill" data-intent="department" onclick="selectIntent('department')">Department View</button>
+                <button class="intent-pill" data-intent="cash" onclick="selectIntent('cash')">Cash Position</button>
+              </div>
+
+              <div class="refinement" id="refinement" hidden>
+                <div class="refinement-header">
+                  <div class="refinement-label" id="refinementLabel">Refine</div>
+                  <button class="logic-toggle" id="logicToggle" onclick="toggleLogic()" aria-label="Toggle calculation logic" title="Show calculation logic">
+                    <span id="logicToggleIcon">ⓘ</span>
+                  </button>
+                </div>
+
+                <div class="scope-chooser" id="scopeChooser" hidden>
+                  <div class="scope-prompt">Is this for a project or your whole department?</div>
+                  <div class="scope-pills" id="scopePills"></div>
+                </div>
+
+                <div class="sub-pills" id="subPills"></div>
+
+                <div class="fds-indicator" id="fdsIndicator" hidden>
+                  <div class="fds-indicator-arrow">↑</div>
+                  <div class="fds-indicator-body">
+                    <div class="fds-indicator-path">
+                      <span class="fds-folder" id="fdsFolderEcho">—</span>
+                      <span class="fds-arrow">→</span>
+                      <span class="fds-report" id="fdsReportEcho">—</span>
+                    </div>
+                    <div class="fds-indicator-hint" id="fdsHint"></div>
+                    <button class="show-me-btn" id="showMeBtn" data-mode="highlight" onclick="showMeAnimation()">
+                      <span class="show-me-icon" id="showMeIcon">↗</span>
+                      <span id="showMeLabel">Show Me</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="logic-card" id="logicCard" hidden>
+                  <div class="logic-formula" id="logicFormula"></div>
+                  <div class="logic-explain" id="logicExplain"></div>
+                  <div class="logic-report" id="logicReport"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </main>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+
+
+const folderReports = {
+  "ChartField Statements": ["Bank Account Reconciliation","Chartfield Detail Statement","Chartfield Summary Statement","Chartfield Transaction Statement","COSTAR Summary Statement","Department Summary Statement","Initiative Summary Statement","Open GL Transactions","Project Summary Statement","Recharge Center Report","Segment Summary Statement","Site Summary Statement"],
+  "Project Lifecycle Reports": ["F&A Recovery Report","Non-Sponsored Project Financial Report - Detail","Non-Sponsored Project Financial Report - Summary","Project Cost Summary-Overrun Report","Project Reporting Jump Page","Projects by Department Report","Sponsored Project Financial - Summary By Budget Category","Sponsored Project Financial Report - Detail","Sponsored Project Financial Summary","Sponsored Project Net Receivables Summary Report","Sponsored Project Quarterly Financial Report - Detail","Sponsored Project Quarterly Financial Report - Summary by Budget Category"],
+  "Payroll Reports": ["Department Employee Report","Employee Report","Payroll Detail Report","Payroll Summary Report","Fringe Benefit Report - Detail","Fringe Benefit Report - Summary","Fringe Benefit Trending Report"],
+  "Trial Balance Reports": ["Trial Balance by Account Detail","Trial Balance by Chartfield","Trial Balance by Department(s)","Trial Balance by Specific Accounts Detail"],
+  "Procurement Reports": ["Open Procurement Transactions","P-Card Drillback","Purchase Order Open Commitment","SAPO Budget vs Encumbrance Report","Voucher Payment Detail - Exportable"],
+  "Financial Statements": ["Balance Sheet - Departmental","Statement of Activities - Departmental","Cash Balances Summary","Cash Balances Detail - Exportable","Bank Account Reconciliation"],
+  "Endowment And Gift Reports": ["Endowment Market Value Report by Department(s)","Endowment Gift Spending Detail Report","Endowment Gift Spending Summary Report"],
+  "Fiscal Year-End Reports": ["Fiscal Year-End Closed Purchase Orders Report","Fiscal Year-End Closed Requisitions Report","Fiscal Year-End Closed Vouchers Report","Fiscal Year-End COB Summary Operating Statement","Fiscal Year-End Encumbrance Report","Fiscal Year-End Non-PO Vouchers Accrued Report","Fiscal Year-End P-Cards Accrued Report"],
+  "Fund Balance-Overdraft Reports": ["Fund Balance-Overdraft Reports"],
+  "Claim on Cash Reports": ["Cash Balances Summary","Cash Balances Detail - Exportable"],
+  "Consolidated Operating Reports (COB)": ["Consolidated Operating Business (COB)","Fiscal Year-End COB Summary Operating Statement"]
+};
+
+
+// --- Two-layer intent system -------------------------------------------
+const intents = {
+  balance: {
+    label: "Budget and Available Balance",
+    formula: "Available Balance = Budget − Actuals − Commitments",
+    explain: "<em>Budget</em> is your authorized spending. <em>Actuals</em> are posted expenses. <em>Commitments</em> are open POs and encumbrances not yet paid. The remainder is what you can still spend.",
+    primaryReport: "Project Summary Statement",
+    scopes: [
+      {
+        key: "project",
+        label: "A Specific Project",
+        sublabel: "ChartString-level — one project, fund, or grant",
+        subPills: [
+          { label: "Available Balance",     report: "Project Summary Statement",
+            only: ["Project Summary Statement","Sponsored Project Financial - Summary By Budget Category"] },
+          { label: "Original Budget",        report: "Project Summary Statement" },
+          { label: "Current Estimate",       report: "Project Summary Statement",
+            only: ["Project Summary Statement"] },
+          { label: "Prior Year Actuals",     report: "Project Summary Statement",
+            only: ["Project Summary Statement","Consolidated Operating Business (COB)"] }
+        ]
+      },
+      {
+        key: "department",
+        label: "Department-Wide",
+        sublabel: "Roll-up across all projects in a department",
+        subPills: [
+          { label: "Department Summary",         report: "Department Summary Statement" },
+          { label: "Operating Budget (COB)",     report: "Consolidated Operating Business (COB)",
+            only: ["Sponsored Project Financial - Summary By Budget Category","Project Summary Statement","Consolidated Operating Business (COB)"] },
+          { label: "Trial Balance by Department",report: "Trial Balance by Department(s)" },
+          { label: "All Projects in Department", report: "Projects by Department Report" }
+        ]
+      }
+    ]
+  },
+  charges: {
+    label: "Charges & Transactions - Detailed View",
+    formula: "Posted Charge = Journaled to GL",
+    explain: "A charge hits FDS once it's journaled to the GL. <em>P-Card</em> transactions post after cardholder reconciliation. <em>Vendor invoices</em> post after AP voucher approval. <em>Subaward</em> invoices post against SAPO encumbrances.",
+    primaryReport: "Depends on charge type — pick a sub-pill to narrow.",
+    subPills: [
+      { label: "Transaction Detail",     report: "Trial Balance by Account Detail",
+        only: ["Trial Balance by Account Detail","P-Card Drillback"] },
+      { label: "P-Card Charges",         report: "P-Card Drillback" },
+      { label: "Vendor / Supplier",      report: "Voucher Payment Detail - Exportable" },
+      { label: "Subaward / SAPO",        report: "SAPO Budget vs Encumbrance Report" },
+      { label: "Voucher / Invoice",      report: "Voucher Payment Detail - Exportable" }
+    ]
+  },
+  payroll: {
+    label: "Payroll Reports",
+    formula: "Payroll = Salary (earn code × combo code) + Fringe (rate × salary)",
+    explain: "Payroll posts in two pieces: <em>Salary</em> by earn code and combo code, and <em>Fringe</em> as a calculated benefit rate applied to salary. <em>Cost transfers</em> move charges between ChartStrings retroactively.",
+    primaryReport: "Payroll Detail Report",
+    subPills: [
+      { label: "Who Was Paid",           report: "Payroll Detail Report",
+        only: ["Payroll Detail Report","Payroll Summary Report"] },
+      { label: "Salary by Project",      report: "Payroll Detail Report",
+        only: ["Payroll Detail Report","Payroll Summary Report"] },
+      { label: "Fringe Charges",         report: "Payroll Detail Report",
+        only: ["Payroll Detail Report","Payroll Summary Report"] },
+      { label: "Cost Transfers",         report: "Payroll Detail Report",
+        only: ["Payroll Detail Report","Payroll Summary Report"] },
+      { label: "View Payroll Encumbrances", report: "Payroll Summary Report",
+        only: ["Payroll Summary Report","Payroll Detail Report"] }
+    ]
+  },
+  sponsored: {
+    label: "Sponsored Project Management",
+    formula: "Sponsored Available = Award Budget − Direct Costs − F&A − Encumbrances",
+    explain: "Sponsored balance differs from non-sponsored. The <em>award has a hard ceiling</em>, F&A is calculated on direct costs, and budget categories are PI-restricted. Always check at the budget category level — not just the project total.",
+    primaryReport: "Sponsored Project Financial - Summary By Budget Category",
+    subPills: [
+      { label: "Budget vs Actual by Category", report: "Sponsored Project Financial - Summary By Budget Category" },
+      { label: "Burn Rate",                    report: "Sponsored Project Financial - Summary By Budget Category" },
+      { label: "Available Balance (Sponsored)",report: "Sponsored Project Financial - Summary By Budget Category" },
+      { label: "Encumbrances",                 report: "Purchase Order Open Commitment",
+        only: ["Purchase Order Open Commitment","Payroll Summary Report"] },
+      { label: "Transaction Detail",           report: "Sponsored Project Financial Report - Detail" }
+    ]
+  },
+  purchaseorders: {
+    label: "Purchase Order Open Commitments",
+    formula: "Open Commitment = PO Amount − Vouchered/Paid",
+    explain: "An <em>open commitment</em> is money already promised to a vendor via a Purchase Order but not yet invoiced or paid. It encumbers your budget — meaning that balance is reserved, not spendable. Watch open commitments at <em>year-end</em> for accruals and at <em>award close-out</em> for cleanup.",
+    primaryReport: "Purchase Order Open Commitment",
+    subPills: [
+      { label: "Open POs by ChartString",  report: "Purchase Order Open Commitment" },
+      { label: "Subaward / SAPO",          report: "SAPO Budget vs Encumbrance Report" },
+      { label: "Year-End PO Status",       report: "Fiscal Year-End Encumbrance Report" },
+      { label: "Closed POs (Year-End)",    report: "Fiscal Year-End Closed Purchase Orders Report" }
+    ]
+  },
+  department: {
+    label: "Department View",
+    formula: "Department View = Roll-up of all projects, charges, and people in your department",
+    explain: "Use these reports when you need a <em>department-wide</em> view rather than a single project. Want every project the department owns? <em>Projects by Department</em>. Want a financial summary across the whole department? <em>Department Summary</em>. Want to see who's on payroll in the department? <em>Department Employee</em>.",
+    primaryReport: "Projects by Department Report",
+    subPills: [
+      { label: "All Projects in Department", report: "Projects by Department Report" },
+      { label: "Department Summary",         report: "Department Summary Statement" },
+      { label: "Trial Balance by Department",report: "Trial Balance by Department(s)" },
+      { label: "Department Employees",       report: "Department Employee Report" }
+    ]
+  },
+  cash: {
+    label: "Cash Position",
+    formula: "Claim on Cash = Net Fund-Level Activity (your dept's share)",
+    explain: "<em>Claim on Cash</em> is your department's share of University cash, calculated as the net of fund-level activity. It is <em>not</em> the same as available budget — a fund can be in deficit on cash while still having budget remaining (and vice versa).",
+    primaryReport: "Cash Balances Summary",
+    subPills: [
+      { label: "Claim on Cash",          report: "Cash Balances Summary" },
+      { label: "Fund Balance",           report: "Cash Balances Summary" },
+      { label: "Cash Detail",            report: "Cash Balances Detail - Exportable" }
+    ]
+  }
+};
+
+let activeIntent = null;
+let logicOpen = false;
+let activeAllowList = null; // when set by sub-pill, restricts search to these reports only
+
+
+function selectIntent(key) {
+  // Toggle: clicking the active intent collapses the refinement panel
+  if (activeIntent === key) {
+    activeIntent = null;
+    activeAllowList = null;
+    logicOpen = false;
+    document.querySelectorAll('.intent-pill').forEach(p => p.classList.remove('active'));
+    document.getElementById('refinement').hidden = true;
+    document.getElementById('logicCard').hidden = true;
+    document.getElementById('logicToggle').classList.remove('open');
+    resetIndicator();
+    document.getElementById('folderSelect').value = 'Select a folder...';
+    document.getElementById('reportSelect').innerHTML = '<option>Select a report...</option>';
+    document.getElementById('selectedLine').textContent = 'Use the options below to identify the right report.';
+    return;
+  }
+
+  activeIntent = key;
+  activeAllowList = null;
+  const intent = intents[key];
+
+  // Switching intents — wipe any prior sub-pill selection downstream
+  resetIndicator();
+  document.getElementById('folderSelect').value = 'Select a folder...';
+  document.getElementById('reportSelect').innerHTML = '<option>Select a report...</option>';
+  document.getElementById('selectedLine').textContent = 'Use the options below to identify the right report.';
+
+  // Highlight active intent pill
+  document.querySelectorAll('.intent-pill').forEach(p => {
+    p.classList.toggle('active', p.dataset.intent === key);
+  });
+
+  // Show refinement
+  const refinement = document.getElementById('refinement');
+  refinement.hidden = false;
+  document.getElementById('refinementLabel').textContent = `Refine: ${intent.label}`;
+
+  const scopeChooser = document.getElementById('scopeChooser');
+  const scopePillsEl = document.getElementById('scopePills');
+  const subPillsEl = document.getElementById('subPills');
+
+  if (intent.scopes && intent.scopes.length) {
+    // This intent branches by scope — render scope chooser, hide sub-pills until a scope is picked
+    scopeChooser.hidden = false;
+    scopePillsEl.innerHTML = intent.scopes.map(s =>
+      `<button class="scope-pill" data-scope="${s.key}" onclick="selectScope('${key}','${s.key}',this)">
+         <span class="scope-pill-main">${s.label}</span>
+         <span class="scope-pill-sub">${s.sublabel}</span>
+       </button>`
+    ).join('');
+    subPillsEl.innerHTML = '';
+  } else {
+    // No scopes — render sub-pills directly as before
+    scopeChooser.hidden = true;
+    scopePillsEl.innerHTML = '';
+    subPillsEl.innerHTML = intent.subPills.map(sp => {
+      const onlyData = sp.only
+        ? ` data-only="${encodeURIComponent(JSON.stringify(sp.only))}"`
+        : '';
+      return `<button class="sub-pill" data-report="${encodeURIComponent(sp.report)}"${onlyData} onclick="selectSubPill(this)">${sp.label}</button>`;
+    }).join('');
+  }
+
+  // Update logic card content (whether visible or not)
+  document.getElementById('logicFormula').textContent = intent.formula;
+  document.getElementById('logicExplain').innerHTML = intent.explain;
+  document.getElementById('logicReport').innerHTML =
+    `Primary Report<strong>${intent.primaryReport}</strong>`;
+}
+
+// When a scope is picked, render the sub-pills for that scope
+function selectScope(intentKey, scopeKey, el) {
+  document.querySelectorAll('.scope-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+
+  const intent = intents[intentKey];
+  const scope = intent.scopes.find(s => s.key === scopeKey);
+  if (!scope) return;
+
+  const subPillsEl = document.getElementById('subPills');
+  subPillsEl.innerHTML = scope.subPills.map(sp => {
+    const onlyData = sp.only
+      ? ` data-only="${encodeURIComponent(JSON.stringify(sp.only))}"`
+      : '';
+    return `<button class="sub-pill" data-report="${encodeURIComponent(sp.report)}"${onlyData} onclick="selectSubPill(this)">${sp.label}</button>`;
+  }).join('');
+
+  // Picking a new scope clears any previous report selection
+  resetIndicator();
+  document.getElementById('folderSelect').value = 'Select a folder...';
+  document.getElementById('reportSelect').innerHTML = '<option>Select a report...</option>';
+  document.getElementById('selectedLine').textContent = 'Use the options below to identify the right report.';
+}
+
+function selectSubPill(el) {
+  const wasActive = el.classList.contains('active');
+  document.querySelectorAll('.sub-pill').forEach(p => p.classList.remove('active'));
+
+  if (wasActive) {
+    // Unselect: clear dropdowns and hide indicator
+    document.getElementById('folderSelect').value = 'Select a folder...';
+    document.getElementById('reportSelect').innerHTML = '<option>Select a report...</option>';
+    document.getElementById('selectedLine').textContent = 'Use the options below to identify the right report.';
+    resetIndicator();
+    return;
+  }
+
+  el.classList.add('active');
+  const report = decodeURIComponent(el.dataset.report);
+  const folder = findFolderForReport(report);
+
+  // Drive the dropdowns up top
+  if (folder) {
+    document.getElementById('folderSelect').value = folder;
+    populateReports(folder);
+    document.getElementById('reportSelect').value = report;
+    document.getElementById('selectedLine').textContent = `${folder} → ${report}`;
+  }
+
+  // Show inline indicator card mirroring the dropdown selection
+  document.getElementById('fdsFolderEcho').textContent = folder || '—';
+  document.getElementById('fdsReportEcho').textContent = report;
+  document.getElementById('fdsIndicator').hidden = false;
+
+  // Morph the Show Me button if this report has an interactive sample
+  updateShowMeButton(report);
+}
+
+// Switches the Show Me button between "highlight dropdowns" and
+// "open interactive sample" based on whether a sample exists for the report.
+function updateShowMeButton(report) {
+  // Show Me always pulses the dropdowns up top — single behavior across all reports
+  const btn = document.getElementById('showMeBtn');
+  btn.dataset.mode = 'highlight';
+  btn.dataset.url = '';
+  document.getElementById('showMeLabel').textContent = 'Show Me';
+  const icon = document.getElementById('showMeIcon');
+  icon.textContent = '↗';
+  icon.style.transform = 'rotate(-12deg)';
+  document.getElementById('fdsHint').textContent = 'The folder and report dropdowns at the top of the page have been set for you.';
+}
+
+// Reverse-lookup which folder owns a given report
+function findFolderForReport(report) {
+  for (const [folder, list] of Object.entries(folderReports)) {
+    if (list.includes(report)) return folder;
+  }
+  return null;
+}
+
+// Fully reset the FDS indicator — hide it AND clear the cached text
+function resetIndicator() {
+  const indicator = document.getElementById('fdsIndicator');
+  indicator.hidden = true;
+  document.getElementById('fdsFolderEcho').textContent = '—';
+  document.getElementById('fdsReportEcho').textContent = '—';
+  // Reset the Show Me button back to highlight mode
+  const btn = document.getElementById('showMeBtn');
+  btn.dataset.mode = 'highlight';
+  btn.dataset.url = '';
+  document.getElementById('showMeLabel').textContent = 'Show Me';
+  const icon = document.getElementById('showMeIcon');
+  icon.textContent = '↗';
+  icon.style.transform = 'rotate(-12deg)';
+  // Empty the hint until a report is chosen — populated by updateShowMeButton
+  document.getElementById('fdsHint').textContent = '';
+}
+
+function toggleLogic() {
+  logicOpen = !logicOpen;
+  const card = document.getElementById('logicCard');
+  const toggle = document.getElementById('logicToggle');
+  card.hidden = !logicOpen;
+  toggle.classList.toggle('open', logicOpen);
+  toggle.title = logicOpen ? 'Hide calculation logic' : 'Show calculation logic';
+}
+
+// --- "Show Me" choreography --------------------------------------------
+let showMeRunning = false;
+
+function showMeAnimation() {
+  if (showMeRunning) return;
+  showMeRunning = true;
+
+  const btn = document.getElementById('showMeBtn');
+  const folderEl = document.getElementById('folderSelect');
+  const reportEl = document.getElementById('reportSelect');
+  btn.classList.add('playing');
+
+  // Make sure the header dropdowns are in view (the blue bar lives up top)
+  folderEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Sequence: pulse folder → pulse report → cleanup
+  setTimeout(() => pulseElement(folderEl, 'Folder'), 450);
+  setTimeout(() => pulseElement(reportEl, 'Report'), 1850);
+  setTimeout(() => {
+    btn.classList.remove('playing');
+    showMeRunning = false;
+  }, 3400);
+}
+
+function pulseElement(el, label) {
+  // Drop in the highlight ring
+  el.classList.add('pulse-highlight');
+
+  // Floating "Folder" / "Report" tag positioned just above the element
+  const rect = el.getBoundingClientRect();
+  const pointer = document.createElement('div');
+  pointer.className = 'show-me-pointer';
+  pointer.textContent = label;
+  pointer.style.top = (window.scrollY + rect.top - 28) + 'px';
+  pointer.style.left = (window.scrollX + rect.left + 8) + 'px';
+  document.body.appendChild(pointer);
+
+  // Hold the highlight, then clean up before the next one fires
+  setTimeout(() => {
+    el.classList.remove('pulse-highlight');
+    pointer.remove();
+  }, 1300);
+}
+
+
+function populateReports(folder) {
+  const reportSelect = document.getElementById('reportSelect');
+  const list = folderReports[folder] || [];
+  reportSelect.innerHTML = '<option>Select a report...</option>' + list.map(r => `<option>${r}</option>`).join('');
+}
+
+document.getElementById('folderSelect').addEventListener('change', e => {
+  populateReports(e.target.value);
+  document.getElementById('selectedLine').textContent =
+    e.target.value === 'Select a folder...'
+      ? 'Use the search below to identify the right report.'
+      : e.target.value;
+});
+
+document.getElementById('reportSelect').addEventListener('change', e => {
+  if (e.target.value !== 'Select a report...') {
+    document.getElementById('selectedLine').textContent =
+      `${document.getElementById('folderSelect').value} → ${e.target.value}`;
+  }
+});
+
+function resetPage() {
+  document.getElementById('folderSelect').value = 'Select a folder...';
+  document.getElementById('reportSelect').innerHTML = '<option>Select a report...</option>';
+  document.getElementById('selectedLine').textContent = 'Use the options below to identify the right report.';
+
+  // Reset two-layer pill state
+  activeIntent = null;
+  activeAllowList = null;
+  logicOpen = false;
+  document.querySelectorAll('.intent-pill').forEach(p => p.classList.remove('active'));
+  document.getElementById('refinement').hidden = true;
+  document.getElementById('logicCard').hidden = true;
+  document.getElementById('logicToggle').classList.remove('open');
+  resetIndicator();
+}
+
+
+
+</script>
+</body>
+</html>
